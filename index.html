@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ronbo Admin — Store Management</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=Newsreader:wght@600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- ============ AUTH VIEW ============ -->
+<div id="auth-view">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="logo-mark">R</div>
+      <h1>RONBO</h1>
+      <p data-i18n="brand_tag">Peace • Balance • Wellness</p>
+    </div>
+    <div class="auth-tabs">
+      <button id="tab-login" class="active" data-i18n="login">Log in</button>
+      <button id="tab-register" data-i18n="register">Create account</button>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+
+    <form id="form-login">
+      <div class="field">
+        <label data-i18n="email">Email</label>
+        <input id="login-email" type="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label data-i18n="password">Password</label>
+        <input id="login-password" type="password" required autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit" data-i18n="login">Log in</button>
+    </form>
+
+    <form id="form-register" style="display:none">
+      <p class="hint" style="margin-bottom:1rem" data-i18n="register_sub">First account registered becomes the owner</p>
+      <div class="field">
+        <label data-i18n="name">Name</label>
+        <input id="reg-name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label data-i18n="email">Email</label>
+        <input id="reg-email" type="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label data-i18n="password">Password</label>
+        <input id="reg-password" type="password" required autocomplete="new-password" minlength="6">
+      </div>
+      <button class="btn btn-gold btn-block" type="submit" data-i18n="register">Create account</button>
+    </form>
+
+    <div style="text-align:center;margin-top:1.2rem">
+      <div class="lang-toggle" style="display:inline-flex">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP VIEW ============ -->
+<div id="app-view">
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="name">RONBO</div>
+      <div class="sub" data-i18n="brand_tag">Peace • Balance • Wellness</div>
+    </div>
+    <nav class="side-nav">
+      <button data-sec="products" class="active"><span class="ico">📦</span><span data-i18n="products">Products</span></button>
+      <button data-sec="bundles"><span class="ico">🎁</span><span data-i18n="bundles">Bundles</span></button>
+      <button data-sec="discounts"><span class="ico">🏷️</span><span data-i18n="discounts">Discounts</span></button>
+      <button data-sec="financials"><span class="ico">📊</span><span data-i18n="financials">Financials</span></button>
+      <button data-sec="users" data-admin-only><span class="ico">👥</span><span data-i18n="users">Users</span></button>
+      <button data-sec="settings" data-admin-only><span class="ico">⚙️</span><span data-i18n="settings">Settings</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="who" id="who-email">—</div>
+      <div class="role" id="who-role">—</div>
+      <button class="btn btn-ghost btn-sm" id="btn-logout" style="color:#cfe3e2;border-color:rgba(255,255,255,.25)">
+        <span data-i18n="logout">Log out</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <h1 id="page-title">Ronbo Admin</h1>
+      <div class="lang-toggle">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="es">ES</button>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <section id="sec-products" class="section on">
+      <div class="searchbar">
+        <input id="search" data-i18n-ph="search_ph" placeholder="Search products…">
+        <button class="btn btn-primary" id="btn-add-product" data-i18n="add_product">+ Add product</button>
+      </div>
+      <div id="products-list"></div>
+    </section>
+
+    <!-- BUNDLES -->
+    <section id="sec-bundles" class="section">
+      <div class="searchbar">
+        <button class="btn btn-primary" id="btn-add-bundle" data-i18n="add_bundle">+ New bundle</button>
+      </div>
+      <div id="bundles-list"></div>
+    </section>
+
+    <!-- DISCOUNTS -->
+    <section id="sec-discounts" class="section">
+      <div class="searchbar">
+        <button class="btn btn-primary" id="btn-add-discount" data-i18n="add_discount">+ New code</button>
+      </div>
+      <div id="discounts-list"></div>
+    </section>
+
+    <!-- FINANCIALS -->
+    <section id="sec-financials" class="section">
+      <div class="kpi-row">
+        <div class="kpi"><div class="lbl" data-i18n="kpi_products">Products</div><div class="val" id="kpi-products">0</div></div>
+        <div class="kpi gold"><div class="lbl" data-i18n="kpi_stock_value">Inventory cost value</div><div class="val" id="kpi-stockval">$0.00</div></div>
+        <div class="kpi"><div class="lbl" data-i18n="kpi_avg_margin">Avg. margin</div><div class="val" id="kpi-margin">0%</div></div>
+        <div class="kpi"><div class="lbl" data-i18n="kpi_bundles">Bundles</div><div class="val" id="kpi-bundles">0</div></div>
+        <div class="kpi gold"><div class="lbl" data-i18n="kpi_codes">Active codes</div><div class="val" id="kpi-codes">0</div></div>
+      </div>
+      <div id="financials-table"></div>
+    </section>
+
+    <!-- USERS -->
+    <section id="sec-users" class="section">
+      <div class="searchbar">
+        <button class="btn btn-primary" id="btn-add-user" data-i18n="add_user">+ New user</button>
+      </div>
+      <div id="users-list"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="sec-settings" class="section">
+      <div class="card" style="max-width:560px">
+        <h2 data-i18n="settings_title">Store settings</h2>
+        <div class="field">
+          <label data-i18n="commission_rate">TikTok Shop commission %</label>
+          <input id="set-commission" type="number" step="0.1" min="0" max="100">
+        </div>
+        <div class="field">
+          <label data-i18n="tax_rate">Sales tax %</label>
+          <input id="set-tax" type="number" step="0.1" min="0" max="100">
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()" data-i18n="save_settings">Save settings</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal + toast -->
+<div class="modal-back" id="modal-back"><div class="modal" id="modal-body"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
