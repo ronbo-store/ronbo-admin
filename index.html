@@ -29,7 +29,7 @@
     </div>
     <div class="auth-tabs">
       <button id="tab-login" class="active" data-i18n="login">Log in</button>
-      <button id="tab-register" data-i18n="register">Create account</button>
+      
     </div>
     <div id="auth-error" class="auth-error"></div>
 
@@ -45,10 +45,10 @@
       <button class="btn btn-primary btn-block" type="submit" data-i18n="login">Log in</button>
     </form>
 
-    <form id="form-register" style="display:none">
-      <p class="hint" style="margin-bottom:1rem" data-i18n="register_sub">First account registered becomes the owner</p>
+    <!-- Public self-registration is disabled: this panel is invite-only. -->
+      <div class="register-disabled"><p class="hint" style="margin:1rem 0 0" data-i18n="no_self_register">Need an account? Contact the administrator.</p></div>
       <div class="field">
-        <label data-i18n="name">Name</label>
+        </div><!--
         <input id="reg-name" autocomplete="name">
       </div>
       <div class="field">
@@ -59,7 +59,7 @@
         <label data-i18n="password">Password</label>
         <input id="reg-password" type="password" required autocomplete="new-password" minlength="6">
       </div>
-      <button class="btn btn-gold btn-block" type="submit" data-i18n="register">Create account</button>
+      -->
     </form>
 
     <div style="text-align:center;margin-top:1.2rem">
