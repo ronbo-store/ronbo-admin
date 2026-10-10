@@ -4,7 +4,7 @@
 */
 import { initializeApp } from "firebase/app";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  getAuth, signInWithEmailAndPassword,
   signOut, onAuthStateChanged
 } from "firebase/auth";
 import {
@@ -80,7 +80,7 @@ const STR = {
     user_created: "User created. Share the login with your manager.",
     role_updated: "Role updated.",
     cannot_delete_self: "You cannot delete your own account.",
-    lang_note: "Language",
+    lang_note: "Language", no_self_register: "Need an account? Contact the administrator.", account_not_approved: "This account is not approved. Contact the administrator.",
   },
   es: {
     brand_tag: "Paz • Equilibrio • Bienestar",
@@ -134,7 +134,7 @@ const STR = {
     user_created: "Usuario creado. Comparte el acceso con tu gestor.",
     role_updated: "Rol actualizado.",
     cannot_delete_self: "No puedes eliminar tu propia cuenta.",
-    lang_note: "Idioma",
+    lang_note: "Idioma", no_self_register: "¿Necesitas una cuenta? Contacta al administrador.", account_not_approved: "Esta cuenta no está aprobada. Contacta al administrador.",
   }
 };
 
@@ -212,28 +212,23 @@ async function ensureUserDoc(uid, email, name) {
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    // Bootstrap: first user ever becomes admin/owner
-    const all = await getDocs(collection(db, "users"));
-    const first = all.empty;
-    await setDoc(ref, {
-      email, name: name || email.split("@")[0],
-      role: first ? "admin" : "viewer",
-      isOwner: first,
-      createdAt: serverTimestamp()
-    });
-    return { role: first ? "admin" : "viewer", isOwner: first };
+    // Registration is invite-only: never auto-create a user document here.
+    // Accounts without a Firestore user record are rejected by the caller (fail closed).
+    
+    throw new Error("account_not_approved");
+      
   }
   const d = snap.data();
   return { role: d.role || "viewer", isOwner: !!d.isOwner };
 }
 
 $("tab-login").onclick = () => switchAuthTab("login");
-$("tab-register").onclick = () => switchAuthTab("register");
+// Public self-registration is disabled: this panel is invite-only.
 function switchAuthTab(which) {
   $("tab-login").classList.toggle("active", which === "login");
-  $("tab-register").classList.toggle("active", which === "register");
+  
   $("form-login").style.display = which === "login" ? "" : "none";
-  $("form-register").style.display = which === "register" ? "" : "none";
+  const legacyReg = $("form-register"); if (legacyReg) legacyReg.style.display = "none";
   $("auth-error").classList.remove("show");
 }
 function showAuthError(msg) {
@@ -253,17 +248,16 @@ $("form-login").addEventListener("submit", async (e) => {
   }
 });
 
-$("form-register").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = $("reg-name").value.trim();
-  const email = $("reg-email").value.trim();
-  const pw = $("reg-password").value;
-  if (pw.length < 6) return showAuthError(t("weak_password"));
+// Public self-registration is disabled (invite-only). The register form was removed from the page;
+  // this delegated stub blocks any injected register form from creating an account.
+  document.addEventListener("submit", (e) => {
+  if (!e.target || e.target.id !== "form-register") return;
+  e.preventDefault(); showAuthError(t("no_self_register"));
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pw);
-    await ensureUserDoc(cred.user.uid, email, name);
+    
+    
   } catch (err) {
-    showAuthError(err.code === "auth/email-already-in-use" ? t("email_in_use") : t("auth_error"));
+    
   }
 });
 
@@ -276,7 +270,7 @@ onAuthStateChanged(auth, async (user) => {
     $("app-view").classList.remove("on");
     return;
   }
-  const info = await ensureUserDoc(user.uid, user.email, "");
+  let info; try { info = await ensureUserDoc(user.uid, user.email, ""); } catch (err) { await signOut(auth).catch(() => {}); showAuthError(t("account_not_approved")); return; } // fail closed
   userRole = info.role; isOwner = info.isOwner;
   $("auth-view").style.display = "none";
   $("app-view").classList.add("on");
